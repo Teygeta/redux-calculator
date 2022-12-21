@@ -1,10 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { RootState } from '../../app/store';
 
-type Action = {
-	type: string
-	payload: any //FIXME correggere tipo
-}
 type CalculatorState = {
 	currentOperand: any, //FIXME correggere tipo
 	previousOperand: null | string,
@@ -19,7 +15,9 @@ export const initialState: CalculatorState = {
 	overwrite: true
 };
 
-const evaluate = ({ currentOperand, previousOperand, operation }: any) => {
+
+//Destructuring assignment. (like state.curr...).
+const evaluate = ({ currentOperand, previousOperand, operation }: CalculatorState) => {
 	const prev: number = parseFloat(previousOperand)
 	const current: number = parseFloat(currentOperand)
 	let computation: string | number = ''
@@ -44,31 +42,34 @@ export const calculatorSlice = createSlice({
 		name: 'calculator',
 		initialState,
 		reducers: {
-			ADD_DIGIT: (state, action: Action) => {
-				console.log(action)
-				if (action.payload.digit === '0' && state.currentOperand === '0') return state
-				if (action.payload.digit === '.' && state.currentOperand === null) return state
+			//{ payload } is a key to the action object, which includes "type" and "payload"
+			ADD_DIGIT: (state, { payload }) => {
+				if (payload.digit === '0' && state.currentOperand === '0') return state
+				if (payload.digit === '.' && state.currentOperand.includes('.')) return state
 				if (state.overwrite) {
 					return {
 						...state,
-						currentOperand: action.payload.digit,
+						currentOperand: payload.digit,
 						overwrite: false
 					}
 				}
 				return {
 					...state,
-					currentOperand: `${state.currentOperand || ''}${action.payload.digit}`
+					currentOperand: `${state.currentOperand || ''}${payload.digit}`
 				}
 			},
 			OPERATION: (state, { payload }) => {
+				//If we try to type an operation without having first typed a number
 				if (!state.currentOperand && !state.previousOperand) return state
+				//Overwrite operation
 				if (!state.currentOperand) {
 					return {
 						...state,
 						operation: payload.operation,
 					}
 				}
-				if (state.previousOperand == null) {
+				//on the click of an "operation", I transform the "currentOperand" to "previousOperand"
+				if (!state.previousOperand) {
 					return {
 						...state,
 						operation: payload.operation,
@@ -78,6 +79,7 @@ export const calculatorSlice = createSlice({
 				}
 				return {
 					...state,
+					//we pass the "state" into "evaluate" for manipulate it
 					previousOperand: evaluate(state),
 					operation: payload.operation,
 					currentOperand: null
@@ -106,7 +108,7 @@ export const calculatorSlice = createSlice({
 					state.currentOperand == null ||
 					state.previousOperand == null
 				) {
-					console.log('null ops..')
+					console.log('null to op')
 					return state
 				}
 				return {
